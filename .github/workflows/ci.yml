@@ -1,0 +1,37 @@
+name: ci
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - run: echo "cache_ids=$(date +%Y%m%d)" >> $GITHUB_ENV
+
+      - name: Cache PyPI dependencies
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-pip-${{ env.cache_ids }}
+          path: ~/.cache/pip
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install mkdocs-material
+
+      - name: Build and Deploy
+        run: |
+          mkdocs gh-deploy --force
