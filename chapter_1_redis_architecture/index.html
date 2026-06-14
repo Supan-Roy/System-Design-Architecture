@@ -1,0 +1,3346 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Chapter 1: Redis Architecture - System Design Architecture Handbook</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-1-redis-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="System Design Architecture Handbook" class="md-header__button md-logo" aria-label="System Design Architecture Handbook" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            System Design Architecture Handbook
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Chapter 1: Redis Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Index
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Chapter 1: Redis Architecture
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="System Design Architecture Handbook" class="md-nav__button md-logo" aria-label="System Design Architecture Handbook" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    System Design Architecture Handbook
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chapter 1: Redis Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chapter 1: Redis Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-is-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What is Redis?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. What is Redis?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        History
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-redis-was-created" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Redis Was Created
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-redis-core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Redis Core Concepts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Redis Core Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#in-memory-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In-Memory Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-value-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key-Value Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Structures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Persistence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-redis-internal-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Redis Internal Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Redis Internal Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#redis-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis Server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Loop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Event Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file-events-vs-time-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Events vs. Time Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#single-threaded-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single-Threaded Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Single-Threaded Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-single-threaded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Single-Threaded?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-threading-in-modern-redis-redis-60" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Threading in Modern Redis (Redis 6.0+)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Layer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Network Layer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resp-protocol-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RESP Protocol Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-execution-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Execution Engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Memory Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jemalloc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jemalloc
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-fragmentation-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Fragmentation Ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#active-defragmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Active Defragmentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-redis-data-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Redis Data Structures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Redis Data Structures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#strings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Strings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Internal Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-sds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why SDS?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encoded-representations-of-strings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Encoded Representations of Strings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lists
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lists">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hashes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hashes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hashes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Internal Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#progressive-rehashing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Progressive Rehashing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sorted-sets-zsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sorted Sets (ZSets)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sorted Sets (ZSets)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bitmaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bitmaps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bitmaps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hyperloglog-hll" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HyperLogLog (HLL)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HyperLogLog (HLL)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streams
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Streams">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal-implementation_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-cases_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interview-questions_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interview Questions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-redis-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Redis Persistence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Redis Persistence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rdb-redis-database-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RDB (Redis Database) Snapshots
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RDB (Redis Database) Snapshots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-forking-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Forking Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy-on-write-cow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Copy-On-Write (COW)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advantages-disadvantages-of-rdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advantages &amp; Disadvantages of RDB
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aof-append-only-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AOF (Append-Only File)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AOF (Append-Only File)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aof-sync-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AOF Sync Policies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aof-rewrite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AOF Rewrite
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hybrid-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hybrid Persistence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-redis-replication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Redis Replication
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Redis Replication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#replication-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replication Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Replication Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-synchronization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full Synchronization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partial-synchronization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partial Synchronization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-redis-sentinel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Redis Sentinel
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Redis Sentinel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-sentinel-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Sentinel Exists
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failover-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failover Process
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Failover Process">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subjectively-down-sdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subjectively Down (SDOWN)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objectively-down-odown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Objectively Down (ODOWN)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#election-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Election Mechanism
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-redis-cluster-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Redis Cluster Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Redis Cluster Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sharding-hash-slots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sharding &amp; Hash Slots
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sharding &amp; Hash Slots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hash-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hash Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster Topology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#request-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Routing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Request Routing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#smart-clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Smart Clients
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#moved-redirection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MOVED Redirection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ask-redirection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASK Redirection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-redis-memory-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Redis Memory Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Redis Memory Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eviction-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eviction Policies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lru-least-recently-used-in-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LRU (Least Recently Used) in Redis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lfu-least-frequently-used-in-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LFU (Least Frequently Used) in Redis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LFU (Least Frequently Used) in Redis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-logarithmic-increment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Logarithmic Increment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-decay-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Decay Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ttl-time-to-live-and-expiration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TTL (Time-To-Live) and Expiration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TTL (Time-To-Live) and Expiration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-passive-expiration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Passive Expiration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-active-expiration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Active Expiration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#practical-memory-optimization-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical Memory Optimization Strategies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-redis-in-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Redis in Production
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Redis in Production">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#real-world-architectures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-World Architectures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Real-World Architectures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#netflix-evcache-distributed-personalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Netflix: EVCache &amp; Distributed Personalization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uber-geospatial-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uber: Geospatial Matching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discord-presence-status-gateways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Discord: Presence Status &amp; Gateways
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shopify-flash-sales-job-queues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shopify: Flash Sales &amp; Job Queues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-use-case-architectures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Use Case Architectures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Use Case Architectures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-session-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Session Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-sliding-window-rate-limiter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Sliding Window Rate Limiter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Sliding Window Rate Limiter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lua-script-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lua Script Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-real-time-leaderboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Real-Time Leaderboards
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-common-redis-interview-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Common Redis Interview Questions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Common Redis Interview Questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#beginner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Beginner
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Beginner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q1-what-are-the-main-differences-between-redis-and-memcached" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q1: What are the main differences between Redis and Memcached?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q2-why-is-the-keys-command-dangerous-in-production-and-what-should-you-use-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q2: Why is the KEYS * command dangerous in production, and what should you use instead?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intermediate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intermediate
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Intermediate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q3-what-is-the-difference-between-del-and-unlink" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q3: What is the difference between DEL and UNLINK?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q4-does-redis-support-acid-transactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q4: Does Redis support ACID transactions?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q5-how-does-the-redlock-algorithm-work-and-what-are-its-main-criticisms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q5: How does the Redlock algorithm work, and what are its main criticisms?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q6-explain-what-happens-when-the-replication-backlog-buffer-overflows-during-a-replica-disconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q6: Explain what happens when the replication backlog buffer overflows during a replica disconnect.
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#faang-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FAANG-Level
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FAANG-Level">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q7-design-a-distributed-rate-limiter-that-can-handle-100000-requests-per-second-with-slide-window-precision-how-do-you-scale-this-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q7: Design a distributed rate limiter that can handle 100,000 requests per second with slide-window precision. How do you scale this architecture?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-redis-trade-offs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Redis Trade-offs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Redis Trade-offs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#advantages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advantages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disadvantages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disadvantages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-not-to-use-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to Use Redis
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-redis-vs-competitors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Redis vs. Competitors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-production-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Production Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14. Production Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-availability-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Availability Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-metrics-to-monitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Metrics to Monitor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backup-and-disaster-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup and Disaster Recovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Summary
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="15. Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Takeaways
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#architecture-cheat-sheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Cheat Sheet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-revision-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Revision Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="chapter-1-redis-architecture">Chapter 1: Redis Architecture</h1>
+<h2 id="1-what-is-redis">1. What is Redis?</h2>
+<h3 id="definition">Definition</h3>
+<p><strong>Redis</strong> (which stands for <strong>REmote DIctionary Server</strong>) is an open-source, in-memory, key-value data structure store. It is written in ANSI C and is widely utilized as a database, cache, message broker, and streaming engine. Unlike traditional relational database management systems (RDBMS) that store data on disk, Redis keeps all data in the host system's Random Access Memory (RAM). This architectural decision allows read and write operations to execute with sub-millisecond latencies, making it the de facto standard for high-performance, real-time application caching and data handling.</p>
+<p>Redis is often referred to as a <strong>data structure server</strong>. This is because keys can map to a variety of complex data structures such as Strings, Lists, Hashes, Sets, Sorted Sets, Bitmaps, HyperLogLogs, Geospatial indexes, and Streams.</p>
+<h3 id="history">History</h3>
+<p>Redis was created in <strong>2009</strong> by <strong>Salvatore Sanfilippo</strong> (known online as <em>antirez</em>). At the time, Sanfilippo was building <strong>LLOOGG</strong>, a real-time web analytics service. As the traffic to LLOOGG grew, he found that traditional relational databases (specifically MySQL) could not keep up with the write load of tracking incoming page views in real-time. The disk I/O bottlenecks and transaction overhead of MySQL meant that scaling required expensive hardware upgrades or complex horizontal sharding.</p>
+<p>To solve this specific performance bottleneck, Sanfilippo wrote the first prototype of Redis in C. He designed it to run entirely in memory, support atomic increments, and offer dynamic lists that could be manipulated directly on the server without needing to read the entire data payload into the application memory. He open-sourced the project on GitHub, where it quickly gained traction among developers facing similar real-time data ingestion challenges.</p>
+<h3 id="why-redis-was-created">Why Redis Was Created</h3>
+<p>Before Redis, the primary in-memory caching solution was <strong>Memcached</strong>. While Memcached was highly efficient at storing simple string key-value pairs, it had severe limitations:
+1. <strong>Lack of Data Structures</strong>: Memcached only supported strings. If a developer wanted to append an item to an array stored in the cache, they had to fetch the serialized array over the network, deserialize it in their application, append the item, serialize it back, and write it back to Memcached. This created massive network overhead and CPU serialization costs.
+2. <strong>No Native Persistence</strong>: Memcached was strictly transient. If a server restarted, all cached data was permanently lost.
+3. <strong>No Replication</strong>: Memcached did not natively support replication, making high-availability setups complex to orchestrate.</p>
+<p>Redis was created to address these deficiencies by offering:
+* <strong>Rich Data Types</strong>: Performing operations (like list pushes, set intersections, or sorted set range queries) directly in memory on the server side.
+* <strong>Tunable Persistence</strong>: Allowing data to be written to disk asynchronously while still serving requests from memory.
+* <strong>Built-in Replication and HA</strong>: Enabling master-replica synchronization, automatic failover (via Sentinel), and horizontal clustering.</p>
+<hr />
+<h2 id="2-redis-core-concepts">2. Redis Core Concepts</h2>
+<p>To understand the architecture of Redis, one must first grasp its four foundational pillars:</p>
+<h3 id="in-memory-database">In-Memory Database</h3>
+<p>Redis holds all its data in the host machine’s primary memory (RAM). When an application requests a key, Redis reads it directly from memory addresses, eliminating the physical seek times associated with Solid State Drives (SSDs) or Hard Disk Drives (HDDs). </p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Operation</th>
+<th style="text-align: left;">Typical Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">RAM Access</td>
+<td style="text-align: left;">~50 - 100 nanoseconds</td>
+</tr>
+<tr>
+<td style="text-align: left;">NVMe SSD Access</td>
+<td style="text-align: left;">~10 - 100 microseconds (100x slower than RAM)</td>
+</tr>
+<tr>
+<td style="text-align: left;">SATA SSD Access</td>
+<td style="text-align: left;">~50 - 150 microseconds</td>
+</tr>
+<tr>
+<td style="text-align: left;">Spinning Disk (HDD)</td>
+<td style="text-align: left;">~5 - 15 milliseconds (100,000x slower than RAM)</td>
+</tr>
+</tbody>
+</table>
+<p>By operating entirely within RAM, Redis can comfortably process over <strong>100,000 read/write operations per second (QPS)</strong> on a single standard CPU core, with sub-millisecond latency.</p>
+<h3 id="key-value-store">Key-Value Store</h3>
+<p>Redis operates as a giant associative array (or dictionary). Every piece of data is associated with a unique <strong>Key</strong>.
+* <strong>Keys</strong>: Binary-safe, meaning a key can be any binary sequence. This includes plain text strings (like <code>"user:1000:profile"</code>), serialized JSON, or raw binary data such as a JPEG image file up to 512 MB in size.
+* <strong>Values</strong>: Instead of restricting values to simple strings, Redis allows values to be complex data structures, managed by specialized in-memory engines.</p>
+<h3 id="data-structures">Data Structures</h3>
+<p>Redis is not merely a key-value store; it is a <strong>data structure server</strong>. Rather than forcing the client to retrieve, parse, and rewrite values, Redis exposes commands that allow operations to be executed <em>directly</em> on the server. For example:
+* Adding an element to a set: <code>SADD user:1000:tags "developer"</code>
+* Incrementing a counter: <code>INCR page_views</code>
+* Truncating a list: <code>LTRIM log_queue 0 99</code></p>
+<p>These operations are performed atomically, preventing race conditions that occur when multiple application servers attempt to modify the same resource simultaneously.</p>
+<h3 id="persistence">Persistence</h3>
+<p>Although RAM provides speed, it is volatile; if power is cut or the server crashes, the data disappears. Redis addresses this vulnerability through optional, configurable persistence layers:
+1. <strong>RDB (Redis Database)</strong>: Point-in-time, binary snapshots of the dataset written to disk at specified intervals.
+2. <strong>AOF (Append-Only File)</strong>: A log that records every write command received by the server. The log is replayed on startup to reconstruct the original dataset.
+3. <strong>Hybrid Mode</strong>: A combination of RDB and AOF, which uses RDB snapshots for rapid boots and AOF logs for point-in-time durability.</p>
+<hr />
+<h2 id="3-redis-internal-architecture">3. Redis Internal Architecture</h2>
+<p>Understanding what happens inside the single-threaded <code>redis-server</code> process requires examining the event-driven system, network layers, and memory allocator.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>flowchart TD
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    subgraph Client Space
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        C1[Client 1]
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        C2[Client 2]
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        C3[Client N]
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    end
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    subgraph Redis Server Process
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        subgraph Network Layer
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            MUX[I/O Multiplexer: epoll / kqueue]
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        end
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        subgraph Event Loop
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            AE[aeEventLoop]
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            FE[File Event Handler]
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            TE[Time Event Handler: serverCron]
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        end
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        subgraph Execution Engine
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>            CMD[Command Lookup Table]
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            EXEC[Single-Threaded Executor]
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        end
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        subgraph Memory Space
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>            DB[(In-Memory Keyspace)]
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>            JEM[jemalloc Memory Allocator]
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        end
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    end
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    C1 &amp; C2 &amp; C3 --&gt;|RESP Commands| MUX
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>    MUX --&gt;|Trigger Events| AE
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    AE --&gt;|Dispatch File Events| FE
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>    AE --&gt;|Dispatch Time Events| TE
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    FE --&gt;|Execute Commands| EXEC
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    EXEC --&gt;|Command Check| CMD
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    EXEC --&gt;|Read/Write| DB
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    DB &lt;---&gt; JEM
+</span></code></pre></div>
+<h3 id="redis-server">Redis Server</h3>
+<p>The <code>redis-server</code> is a daemon process that initializes the keyspace, spins up the event loop, binds to a configured network port (default: <code>6379</code>), and listens for incoming connections. At its core, the server maintains an internal state struct (<code>struct redisServer</code>) containing pointers to the active databases, client lists, replication backlog, cluster configuration, and system statistics.</p>
+<h3 id="event-loop">Event Loop</h3>
+<p>The heart of Redis's performance is its custom, lightweight event loop, known as the <strong>AE library</strong> (<code>ae.c</code>). Redis does not allocate a thread-per-client connection. Instead, it utilizes <strong>I/O Multiplexing</strong> to monitor thousands of client sockets simultaneously.</p>
+<p>The AE library wraps the operating system’s most efficient multiplexing system calls:
+* <strong><code>epoll</code></strong> on Linux
+* <strong><code>kqueue</code></strong> on macOS and BSD
+* <strong><code>evport</code></strong> on Solaris
+* <strong><code>select</code></strong> / <strong><code>poll</code></strong> as a fallback for compatibility</p>
+<h4 id="file-events-vs-time-events">File Events vs. Time Events</h4>
+<p>The event loop processes two distinct categories of events:
+1. <strong>File Events</strong>: Triggered when a socket has data ready to be read (client request) or is ready to accept written data (sending response back to client), or when a new client connection is established.
+2. <strong>Time Events</strong>: Scheduled tasks that run periodically inside the server. These are orchestrated by a function called <code>serverCron</code> (which runs at a frequency defined by the <code>hz</code> configuration, typically 10 to 100 times per second). <code>serverCron</code> performs:
+   * Active key expiration (reclaiming memory from expired TTLs).
+   * Eviction checking (applying <code>maxmemory</code> policies).
+   * Active memory defragmentation.
+   * Master-replica heartbeat propagation.
+   * AOF rewrite and RDB snapshot checkpoints.</p>
+<h3 id="single-threaded-model">Single-Threaded Model</h3>
+<p>A common point of confusion is how a database execution engine can be "single-threaded" yet outperform multi-threaded databases.</p>
+<h4 id="why-single-threaded">Why Single-Threaded?</h4>
+<ol>
+<li><strong>No Lock Contention</strong>: Multi-threaded systems require locks (mutexes, semaphores, read-write locks) to coordinate thread access to shared data structures. Lock contention introduces substantial CPU overhead and can lead to deadlocks. In Redis, since only one thread accesses the keyspace, no locks are required.</li>
+<li><strong>No Context Switching</strong>: Switching between CPU threads requires saving registers, updating page tables, and invalidating CPU caches. A single-threaded process avoids this overhead entirely.</li>
+<li><strong>CPU Cache Optimization</strong>: Modern CPU architectures rely heavily on L1, L2, and L3 caches. Single-threaded execution ensures that data remains hot in the core's cache, avoiding cache-line bouncing.</li>
+<li><strong>Hardware Bottlenecks</strong>: Redis is almost always bound by <strong>network bandwidth</strong> or <strong>memory throughput</strong>, rather than CPU processing power.</li>
+</ol>
+<h4 id="multi-threading-in-modern-redis-redis-60">Multi-Threading in Modern Redis (Redis 6.0+)</h4>
+<p>While the <strong>command execution engine</strong> remains strictly single-threaded, Redis has introduced multi-threaded support for background I/O tasks:
+* <strong>Lazy Freeing</strong>: Background threads handle the deallocation of memory for large data structures (using the <code>UNLINK</code> command instead of <code>DEL</code>) to prevent the main thread from blocking.
+* <strong>Threaded I/O</strong>: Under high network load, the main thread can bottleneck on reading and parsing commands from network sockets, or writing responses back. Redis 6.0+ allows spawning auxiliary I/O threads to delegate socket read/write operations and RESP protocol serialization/deserialization. The actual command execution, however, is still funneled back to the main thread sequentially.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>flowchart TD
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    Client1[Client 1] --&gt;|Network Send| IO_Thread1(I/O Thread 1)
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    Client2[Client 2] --&gt;|Network Send| IO_Thread2(I/O Thread 2)
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    IO_Thread1 --&gt;|Parse RESP &amp; Queue| MainThread[Main Command Executor Thread]
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    IO_Thread2 --&gt;|Parse RESP &amp; Queue| MainThread
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    MainThread --&gt;|Execute Sequential Writes| DB[(In-Memory DB)]
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    MainThread --&gt;|Queue Output Buffers| IO_Thread1
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    MainThread --&gt;|Queue Output Buffers| IO_Thread2
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    IO_Thread1 --&gt;|Network Reply| Client1
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    IO_Thread2 --&gt;|Network Reply| Client2
+</span></code></pre></div>
+<h3 id="network-layer">Network Layer</h3>
+<p>Redis communicates over TCP using the <strong>RESP (Redis Serialization Protocol)</strong>. RESP is a human-readable, binary-safe protocol designed to be parsed quickly with minimal CPU overhead.</p>
+<h4 id="resp-protocol-structure">RESP Protocol Structure</h4>
+<p>Every command sent to Redis is formatted as an Array of Bulk Strings. For example, the command <code>SET mykey "hello"</code> is transmitted over the wire as:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>*3\r\n
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>$3\r\n
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>SET\r\n
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>$5\r\n
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>mykey\r\n
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>$5\r\n
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>hello\r\n
+</span></code></pre></div>
+<p>Here is a breakdown of the RESP protocol symbols:
+* <code>*</code> denotes an <strong>Array</strong>. <code>*3</code> means an array of 3 elements.
+* <code>$</code> denotes a <strong>Bulk String</strong>. <code>$3</code> means the next element is 3 bytes long.
+* <code>\r\n</code> (CRLF) acts as the delimiter.
+* <code>+</code> denotes a <strong>Simple String</strong> (e.g., <code>+OK\r\n</code>).
+* <code>-</code> denotes an <strong>Error</strong> (e.g., <code>-ERR index out of range\r\n</code>).
+* <code>:</code> denotes an <strong>Integer</strong> (e.g., <code>:1000\r\n</code>).</p>
+<h3 id="command-execution-engine">Command Execution Engine</h3>
+<p>When a client sends a query:
+1. The read event is caught by the OS multiplexer (e.g., <code>epoll</code>).
+2. The network buffer is read into a client query buffer.
+3. The parser processes the RESP query array.
+4. The execution engine queries the <strong>Command Table</strong> (a lookup hash table containing structures like <code>struct redisCommand</code>).
+5. Checks are performed: authentication status, memory constraints, clustering redirection (<code>MOVED</code>/<code>ASK</code>), and command arity.
+6. The command handler is invoked. The handler executes in-memory operations on the database.
+7. The result is formatted into RESP and written to the client's output buffer (or replication buffer).
+8. The file event handler registers a write event, and the output buffer is flushed to the network socket when it becomes writable.</p>
+<h3 id="memory-management">Memory Management</h3>
+<p>Redis manages memory explicitly using an external memory allocator rather than the operating system’s default <code>glibc malloc</code> (which has a high fragmentation rate under erratic workloads).</p>
+<h4 id="jemalloc">jemalloc</h4>
+<p>By default on Linux systems, Redis compiles with <strong><code>jemalloc</code></strong>.
+* <code>jemalloc</code> groups memory allocations into distinct "size classes" (e.g., 8 bytes, 16 bytes, 32 bytes, etc.).
+* When a key is deleted, the memory block is returned to <code>jemalloc</code>'s internal pools rather than immediately returning it to the OS kernel. Consequently, the operating system's RSS (Resident Set Size) metric may remain higher than the actual memory used by Redis keys.</p>
+<h4 id="memory-fragmentation-ratio">Memory Fragmentation Ratio</h4>
+<p>The fragmentation ratio is calculated as:</p>
+<p>$$\text{Fragmentation Ratio} = \frac{\text{Used Memory RSS}}{\text{Used Memory (Dataset Size)}}$$</p>
+<ul>
+<li>A ratio <strong>between 1.0 and 1.5</strong> is normal and healthy.</li>
+<li>A ratio <strong>greater than 1.5</strong> indicates high memory fragmentation, meaning the OS allocated memory but Redis has released the data, leaving pockets of unused, trapped memory.</li>
+<li>A ratio <strong>less than 1.0</strong> indicates that the system has run out of physical RAM and has started swapping memory pages to the disk, which degrades performance by orders of magnitude.</li>
+</ul>
+<h4 id="active-defragmentation">Active Defragmentation</h4>
+<p>Redis supports active defragmentation (<code>activedefrag yes</code>). When enabled, the <code>serverCron</code> periodically scans the keyspace, identifies fragmented memory pages, allocates new contiguous memory locations for the keys, copies the data over, and frees the old fragmented addresses.</p>
+<hr />
+<h2 id="4-redis-data-structures">4. Redis Data Structures</h2>
+<p>Redis exposes several rich data structures. Under the hood, each logical structure can be encoded in different internal representations depending on size constraints.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>classDiagram
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    class RedisObject {
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        +unsigned type : 4
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        +unsigned encoding : 4
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        +unsigned lru : 24
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        +int refcount
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        +void* ptr
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    }
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    class StringEncodings {
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        +OBJ_ENCODING_INT
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        +OBJ_ENCODING_EMBSTR
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        +OBJ_ENCODING_RAW
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    }
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    class ListEncodings {
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        +OBJ_ENCODING_QUICKLIST
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        +OBJ_ENCODING_LISTPACK
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    }
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    class HashEncodings {
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>        +OBJ_ENCODING_LISTPACK
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>        +OBJ_ENCODING_HT
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>    }
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>    class SetEncodings {
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>        +OBJ_ENCODING_INTSET
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>        +OBJ_ENCODING_HT
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>    }
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>    class ZSetEncodings {
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>        +OBJ_ENCODING_LISTPACK
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>        +OBJ_ENCODING_SKIPLIST
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>    }
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>    RedisObject --&gt; StringEncodings
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>    RedisObject --&gt; ListEncodings
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>    RedisObject --&gt; HashEncodings
+</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>    RedisObject --&gt; SetEncodings
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>    RedisObject --&gt; ZSetEncodings
+</span></code></pre></div>
+<h3 id="strings">Strings</h3>
+<h4 id="internal-implementation">Internal Implementation</h4>
+<p>The String is the most basic Redis data type. However, Redis does not use standard null-terminated C strings (<code>char*</code>). Instead, it uses a custom abstraction called <strong>SDS (Simple Dynamic String)</strong>.</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">struct</span><span class="w"> </span><span class="nc">sdshdr8</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">len</span><span class="p">;</span><span class="w">         </span><span class="cm">/* Number of bytes currently used */</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">alloc</span><span class="p">;</span><span class="w">       </span><span class="cm">/* Total memory bytes allocated (excluding header &amp; null-byte) */</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">flags</span><span class="p">;</span><span class="w"> </span><span class="cm">/* 3 lsb for type, 5 msb unused */</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">buf</span><span class="p">[];</span><span class="w">          </span><span class="cm">/* Flex-array containing the string data */</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">};</span>
+</span></code></pre></div>
+<h5 id="why-sds">Why SDS?</h5>
+<ol>
+<li><strong>O(1) Length Retrieval</strong>: Standard C strings require traversing the entire string to find the null terminator <code>\0</code> (O(N) complexity). SDS tracks length in the <code>len</code> field, making <code>STRLEN</code> an O(1) operation.</li>
+<li><strong>Binary Safety</strong>: C strings determine termination by the null character <code>\0</code>. Thus, they cannot contain binary payloads (like raw images or Protobuf streams) containing <code>\0</code>. SDS relies on the <code>len</code> header, allowing it to store any binary stream.</li>
+<li><strong>Buffer Overflow Prevention</strong>: Before appending to an SDS string via <code>sdscat</code>, the function checks if <code>alloc - len</code> has enough space. If not, it reallocates memory, avoiding memory corruption risks.</li>
+<li><strong>Pre-Allocation &amp; Lazy Freeing</strong>: To minimize memory reallocation syscall overhead, SDS pre-allocates extra space when expanded (e.g., doubling the allocation if the size is under 1MB). When shrunk, the memory is not freed immediately but is marked as available in <code>alloc</code>.</li>
+</ol>
+<h5 id="encoded-representations-of-strings">Encoded Representations of Strings</h5>
+<ul>
+<li><strong><code>OBJ_ENCODING_INT</code></strong>: Used if the string can be parsed as a 64-bit signed integer. The value is stored directly in the pointer field (<code>ptr</code>) of the <code>robj</code> structure, saving an extra memory allocation.</li>
+<li><strong><code>OBJ_ENCODING_EMBSTR</code></strong>: Used for short strings (up to 44 bytes). The <code>robj</code> header and the SDS header are allocated within a single contiguous block of memory. This reduces memory fragmentation and improves CPU cache-line hits.</li>
+<li><strong><code>OBJ_ENCODING_RAW</code></strong>: Used for strings larger than 44 bytes. The <code>robj</code> header and the SDS header are allocated in separate memory locations.</li>
+</ul>
+<h4 id="time-complexity">Time Complexity</h4>
+<ul>
+<li><code>SET</code> / <code>GET</code>: $O(1)$</li>
+<li><code>INCR</code> / <code>DECR</code>: $O(1)$</li>
+<li><code>APPEND</code>: $O(1)$ amortized</li>
+<li><code>GETRANGE</code> / <code>SETRANGE</code>: $O(N)$ (where $N$ is the length of the range)</li>
+</ul>
+<h4 id="use-cases">Use Cases</h4>
+<ul>
+<li><strong>Page Caching</strong>: Storing serialized JSON representations of database entities.</li>
+<li><strong>Distributed Counters</strong>: Tracking page views or request frequencies via <code>INCRBY</code>.</li>
+<li><strong>Distributed Locks</strong>: Utilizing <code>SET key value NX PX milliseconds</code> (atomic SET if Not eXists).</li>
+</ul>
+<h4 id="interview-questions">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: What is the difference between <code>RAW</code> and <code>EMBSTR</code> encodings in Redis strings?</li>
+<li><strong>A</strong>: <code>EMBSTR</code> allocates the <code>robj</code> header and the underlying SDS string header in a single contiguous memory block via one call to <code>malloc</code>. <code>RAW</code> calls <code>malloc</code> twice: once for the <code>robj</code> and once for the SDS. Consequently, <code>EMBSTR</code> is faster to construct, faster to free, and has better cache locality, but cannot be modified without being converted to <code>RAW</code>.</li>
+</ul>
+<hr />
+<h3 id="lists">Lists</h3>
+<h4 id="internal-implementation_1">Internal Implementation</h4>
+<p>Historically, Redis Lists were implemented using doubly-linked lists (<code>linkedlist</code>) or compressed ZIP files (<code>ziplist</code>). Modern Redis uses <strong><code>quicklist</code></strong> (and has replaced <code>ziplist</code> with <strong><code>listpack</code></strong>).</p>
+<ul>
+<li><strong>Quicklist</strong>: A doubly-linked list of listpack nodes.</li>
+<li><strong>Listpack</strong>: A contiguous block of memory containing sequence elements. Unlike a linked list, which requires front and back pointers (16 bytes of overhead per node on 64-bit systems), a listpack stores elements back-to-back, drastically reducing pointer overhead and optimizing CPU cache line alignment.</li>
+</ul>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>[Head Quicklist Node] &lt;---&gt; [Quicklist Node] &lt;---&gt; [Tail Quicklist Node]
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>        |                           |                          |
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>   [Listpack]                  [Listpack]                 [Listpack]
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a> [e1, e2, e3...]              [e4, e5...]                [e6, e7, e8...]
+</span></code></pre></div>
+<h4 id="time-complexity_1">Time Complexity</h4>
+<ul>
+<li><code>LPUSH</code> / <code>RPUSH</code> / <code>LPOP</code> / <code>RPOP</code>: $O(1)$</li>
+<li><code>LINDEX</code> / <code>LINSERT</code>: $O(N)$ (where $N$ is the list length)</li>
+<li><code>LRANGE</code>: $O(S + N)$ (where $S$ is start offset and $N$ is number of elements)</li>
+</ul>
+<h4 id="use-cases_1">Use Cases</h4>
+<ul>
+<li><strong>Task Queues</strong>: Producers <code>LPUSH</code> tasks, and workers consume them using blocking reads like <code>BRPOP</code>.</li>
+<li><strong>Recent Activity Feeds</strong>: Storing the last 100 actions of a user and truncating the list using <code>LTRIM</code>.</li>
+</ul>
+<h4 id="interview-questions_1">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: Why was <code>ziplist</code> replaced by <code>listpack</code> in modern Redis?</li>
+<li><strong>A</strong>: Ziplist was vulnerable to "cascading updates." Each entry in a ziplist stored the length of the previous entry to allow reverse traversal. If an update changed the size of a node such that its length required more bytes to represent, it could force the next node to resize, which in turn could force the subsequent node to resize, cascading down the entire list. <code>listpack</code> resolves this by storing the length of the current entry at the end of the entry itself, preventing cascading reallocations.</li>
+</ul>
+<hr />
+<h3 id="hashes">Hashes</h3>
+<h4 id="internal-implementation_2">Internal Implementation</h4>
+<p>Redis Hashes map string fields to string values. They are represented internally in two ways:
+1. <strong>Listpack</strong>: Used when the hash size is small (configured by <code>hash-max-listpack-entries</code>, default 512, and <code>hash-max-listpack-value</code>, default 64 bytes). Key-value pairs are stored sequentially as back-to-back entries in a flat memory block.
+2. <strong>Dict (Hash Table)</strong>: Used when thresholds are exceeded. It is a standard hash table using MurmurHash2 to compute buckets, resolving collisions via linked-list chaining.</p>
+<h5 id="progressive-rehashing">Progressive Rehashing</h5>
+<p>To prevent blocking the event loop when resizing a large hash table, Redis uses progressive rehashing. A dict contains two internal hash tables: <code>ht[0]</code> (active) and <code>ht[1]</code> (newly allocated table of double the size).
+* During every command execution (e.g., <code>HGET</code>, <code>HSET</code>), Redis moves a small bucket of keys from <code>ht[0]</code> to <code>ht[1]</code>.
+* In addition, the time event handler <code>serverCron</code> dedicates up to 1ms per loop iteration to migrate keys.
+* Once the migration is complete, the memory of <code>ht[0]</code> is freed, and <code>ht[1]</code> becomes <code>ht[0]</code>.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>flowchart LR
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    subgraph Dict Structure
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>        direction TB
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        rehashidx[rehashidx: 2]
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        subgraph ht0[ht[0] - Old Table]
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>            Bucket0 --&gt; dictEntry1[keyA: valA]
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>            Bucket1 --&gt; dictEntry2[keyB: valB]
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>            Bucket2[Bucket 2: Migrated]
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>            Bucket3[Bucket 3: Migrated]
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>        end
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>        subgraph ht1[ht[1] - New Table]
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>            nBucket0 --&gt; dictEntryC[keyC: valC]
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>            nBucket2 --&gt; dictEntryD[keyD: valD]
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>            nBucket3 --&gt; dictEntryE[keyE: valE]
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>        end
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    end
+</span></code></pre></div>
+<h4 id="time-complexity_2">Time Complexity</h4>
+<ul>
+<li><code>HSET</code> / <code>HGET</code> / <code>HEXISTS</code>: $O(1)$</li>
+<li><code>HDEL</code>: $O(1)$</li>
+<li><code>HGETALL</code>: $O(N)$ (where $N$ is the number of fields in the hash)</li>
+</ul>
+<h4 id="use-cases_2">Use Cases</h4>
+<ul>
+<li><strong>Entity Storage</strong>: Storing database objects like <code>user:1000</code> containing keys like <code>username</code>, <code>email</code>, and <code>last_login</code>. This uses significantly less memory than storing individual keys (e.g., <code>user:1000:username</code>) due to structural sharing inside the hash table.</li>
+</ul>
+<h4 id="interview-questions_2">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: Explain how progressive rehashing works. What happens to read requests during this transition?</li>
+<li><strong>A</strong>: During progressive rehashing, any read operations (<code>HGET</code>, <code>HEXISTS</code>) look up the key in <code>ht[0]</code> first. If it is not found, Redis checks <code>ht[1]</code>. Write operations (<code>HSET</code>) write directly to <code>ht[1]</code>, ensuring that no new elements are added to <code>ht[0]</code>, allowing the migration process to move towards completion.</li>
+</ul>
+<hr />
+<h3 id="sets">Sets</h3>
+<h4 id="internal-implementation_3">Internal Implementation</h4>
+<p>Sets represent an unordered collection of unique strings. They are encoded in two ways:
+1. <strong>Intset</strong>: Used when all elements in the set are base-10 integers (64-bit signed or lower) and the size is below <code>set-max-intset-entries</code> (default 512). The intset is a sorted array of integers. Since it is sorted, searches are executed via binary search ($O(\log N)$).
+2. <strong>Dict (Hash Table)</strong>: When the set exceeds configuration thresholds or contains non-integer values, it converts to a standard Redis <code>dict</code> where keys are the set members and values are set to <code>NULL</code>.</p>
+<h4 id="time-complexity_3">Time Complexity</h4>
+<ul>
+<li><code>SADD</code> / <code>SREM</code> / <code>SISMEMBER</code>: $O(1)$</li>
+<li><code>SINTER</code> / <code>SUNION</code> / <code>SDIFF</code>: $O(N \times M)$ (where $N$ is the cardinality of the smallest set, and $M$ is the number of sets)</li>
+</ul>
+<h4 id="use-cases_3">Use Cases</h4>
+<ul>
+<li><strong>Tagging Systems</strong>: Storing categories or tags for articles (e.g., <code>article:1020:tags</code> -&gt; <code>["programming", "redis", "databases"]</code>).</li>
+<li><strong>Unique Item Accumulators</strong>: Storing unique IP addresses that visited a webpage to compute raw unique traffic figures.</li>
+</ul>
+<h4 id="interview-questions_3">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: What happens when you add a string member (e.g., <code>"abc"</code>) to a set currently encoded as an <code>intset</code>?</li>
+<li><strong>A</strong>: Redis will dynamically upgrade the collection from an <code>intset</code> to a <code>dict</code> (hash table). The integers are converted into string representation, rehashed, and stored as keys in the newly allocated dictionary. This upgrade is irreversible for the lifespan of that set in memory.</li>
+</ul>
+<hr />
+<h3 id="sorted-sets-zsets">Sorted Sets (ZSets)</h3>
+<h4 id="internal-implementation_4">Internal Implementation</h4>
+<p>Sorted Sets assign a floating-point number called a <strong>Score</strong> to every member, keeping the list sorted.
+1. <strong>Listpack</strong>: Used for small datasets (configured by <code>zset-max-listpack-entries</code> and <code>zset-max-listpack-value</code>). Score-member pairs are kept sequentially, sorted by score.
+2. <strong>Skiplist + Dict</strong>: Used for larger datasets.
+   * <strong>Skiplist (<code>zskiplist</code>)</strong>: An index structure built over a linked list. It uses probabilistic node promotion to create multiple levels of forward links. This allows $O(\log N)$ search, insertion, deletion, and fast range queries (e.g., "get elements with scores between 10 and 20").
+   * <strong>Dict</strong>: Maps members to their current scores. This allows $O(1)$ queries to check the score of any specific member (<code>ZSCORE</code>).</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Level 3: [Head] ------------------------------&gt; [Node 30] ---------------------&gt; NULL
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>Level 2: [Head] -------------&gt; [Node 15] ----------&gt; [Node 30] ----------&gt; [Node 45] -&gt; NULL
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>Level 1: [Head] -&gt; [Node 5] -&gt; [Node 15] -&gt; [Node 22] -&gt; [Node 30] -&gt; [Node 38] -&gt; [Node 45] -&gt; NULL
+</span></code></pre></div>
+<h4 id="time-complexity_4">Time Complexity</h4>
+<ul>
+<li><code>ZADD</code> / <code>ZREM</code>: $O(\log N)$</li>
+<li><code>ZRANGE</code> / <code>ZREVRANGE</code>: $O(\log N + M)$ (where $M$ is the number of returned elements)</li>
+<li><code>ZSCORE</code>: $O(1)$ (retrieved from the internal dictionary)</li>
+</ul>
+<h4 id="use-cases_4">Use Cases</h4>
+<ul>
+<li><strong>Real-time Leaderboards</strong>: Dynamic high-score tracking where players are sorted in real time.</li>
+<li><strong>Sliding Window Rate Limiter</strong>: Storing timestamps of client API calls as scores and trimming elements older than the current window.</li>
+</ul>
+<h4 id="interview-questions_4">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: Why did Redis use a SkipList instead of a Self-Balancing Binary Search Tree (like a Red-Black Tree) for Sorted Sets?</li>
+<li><strong>A</strong>: SkipLists are easier to implement and maintain than Red-Black trees, particularly for concurrency and range-query tasks. Range queries (e.g., <code>ZRANGEBYSCORE</code>) only require finding the starting node via the higher levels, and then traversing the bottom-level pointers sequentially. Furthermore, inserting a node in a SkipList only requires local pointer updates, whereas Red-Black trees require complex global rebalancing rotations.</li>
+</ul>
+<hr />
+<h3 id="bitmaps">Bitmaps</h3>
+<h4 id="internal-implementation_5">Internal Implementation</h4>
+<p>Bitmaps are not a distinct data type. Rather, they are String objects manipulated using bitwise commands. Because strings are binary-safe Simple Dynamic Strings (SDS), they can be viewed as an array of bits.</p>
+<h4 id="time-complexity_5">Time Complexity</h4>
+<ul>
+<li><code>SETBIT</code> / <code>GETBIT</code>: $O(1)$</li>
+<li><code>BITCOUNT</code>: $O(N)$ (where $N$ is the number of bytes in the string)</li>
+<li><code>BITOP</code> (AND, OR, XOR, NOT): $O(N)$</li>
+</ul>
+<h4 id="use-cases_5">Use Cases</h4>
+<ul>
+<li><strong>Daily Active Users (DAU)</strong>: A bitmap where each bit index represents a <code>user_id</code>. When user 1024 logs in on 2026-06-14, set bit 1024: <code>SETBIT active_users:2026-06-14 1024 1</code>. Cardinality is counted via <code>BITCOUNT</code>.</li>
+<li><strong>Feature Flagging</strong>: Fast Boolean flag arrays for systems containing millions of users.</li>
+</ul>
+<h4 id="interview-questions_5">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: What is a potential pitfall of using <code>SETBIT</code> with a very high index, such as <code>SETBIT mykey 4000000000 1</code>?</li>
+<li><strong>A</strong>: Redis must allocate memory for all preceding bits. A bit index of 4 billion equates to a memory allocation of approximately 500 MB ($4 \times 10^9 / 8$ bytes) of contiguous RAM. This large allocation will block the single-threaded execution thread, causing application latency spikes.</li>
+</ul>
+<hr />
+<h3 id="hyperloglog-hll">HyperLogLog (HLL)</h3>
+<h4 id="internal-implementation_6">Internal Implementation</h4>
+<p>HyperLogLog is a probabilistic data structure used to estimate the cardinality (unique count) of a set.
+* Traditional sets grow in memory proportionally to the number of elements.
+* HyperLogLog uses a mathematical approximation based on hashing: it hashes each element and observes the number of leading zeros in the hash's binary representation.
+* Standard Redis HyperLogLogs use <strong>12 KB</strong> of memory, providing a cardinality estimate up to $2^{64}$ items with a standard error of <strong>0.81%</strong>.</p>
+<h4 id="time-complexity_6">Time Complexity</h4>
+<ul>
+<li><code>PFADD</code>: $O(1)$</li>
+<li><code>PFCOUNT</code>: $O(1)$</li>
+</ul>
+<h4 id="use-cases_6">Use Cases</h4>
+<ul>
+<li><strong>Unique Pageviews (UV)</strong>: Tracking unique users visiting a webpage without storing their user IDs or cookies.</li>
+<li><strong>Search Query Cardinality</strong>: Estimating the number of unique search terms entered into a portal daily.</li>
+</ul>
+<h4 id="interview-questions_6">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: Explain how HyperLogLog achieves cardinality estimation in just 12 KB.</li>
+<li><strong>A</strong>: Redis allocates 16,384 ($2^{14}$) registers, each 6 bits in size. The hash of an element uses the first 14 bits to select a register, and the remaining bits to find the position of the leftmost 1-bit. A higher number of leading zeros indicates a larger estimated cardinality. 16,384 registers $\times$ 6 bits = 98,304 bits = 12 KB of memory.</li>
+</ul>
+<hr />
+<h3 id="streams">Streams</h3>
+<h4 id="internal-implementation_7">Internal Implementation</h4>
+<p>Introduced in Redis 5.0, Streams act as an append-only log. Under the hood, Streams are implemented using a hybrid data structure:
+* <strong>Radix Tree (Rax)</strong>: A space-optimized trie structure. Keys in the radix tree are stream IDs (timestamps plus sequence numbers, e.g., <code>1672531199000-0</code>).
+* <strong>Listpacks</strong>: Raw stream payloads are packed together inside listpacks at the radix tree nodes to reduce overhead and improve read localization.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>                   [ Radix Tree Root ]
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>                      /          \
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>            [Prefix: 1672]     [Prefix: 1673]
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>                 /                     \
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>      [Node: 531199000]           [Node: 121000000]
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>             |                            |
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>       [ Listpack ]                 [ Listpack ]
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    [ ID-0: k1=v1... ]           [ ID-0: k2=v2... ]
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    [ ID-1: k3=v3... ]           [ ID-1: k4=v4... ]
+</span></code></pre></div>
+<h4 id="time-complexity_7">Time Complexity</h4>
+<ul>
+<li><code>XADD</code>: $O(\log N)$</li>
+<li><code>XREAD</code> / <code>XREADGROUP</code>: $O(\log N + M)$ (where $M$ is the number of elements returned)</li>
+</ul>
+<h4 id="use-cases_7">Use Cases</h4>
+<ul>
+<li><strong>Message Brokering</strong>: Decoupling microservices with consumer groups (<code>XGROUPCREATE</code>), where multiple workers share a queue, acknowledge items (<code>XACK</code>), and track pending messages.</li>
+<li><strong>Audit Logs</strong>: Storing immutable sequences of transactional events.</li>
+</ul>
+<h4 id="interview-questions_7">Interview Questions</h4>
+<ul>
+<li><strong>Q</strong>: What is the primary operational difference between Redis Pub/Sub and Redis Streams?</li>
+<li><strong>A</strong>: Redis Pub/Sub is "fire-and-forget"—if a subscriber is offline when a message is published, they lose it forever. Redis Streams are persistent on disk (via standard persistence mechanisms) and track offsets, allowing consumers to pull historical data or catch up after a disconnection.</li>
+</ul>
+<hr />
+<h2 id="5-redis-persistence">5. Redis Persistence</h2>
+<p>Redis provides two primary persistence mechanisms, which can be used individually or combined.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>flowchart TD
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    subgraph RAM
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>        KEYS[(Live Keyspace)]
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    end
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    subgraph RDB Mode
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        KEYS --&gt;|fork child process| BGSAVE[BGSAVE Worker]
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        BGSAVE --&gt;|Write snapshot| RDBFile[(dump.rdb)]
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    end
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    subgraph AOF Mode
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        KEYS --&gt;|Log every command| AOFBuf[AOF Write Buffer]
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        AOFBuf --&gt;|fsync everysec / always| AOFFile[(appendonly.aof)]
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        AOFFile --&gt;|BGREWRITEAOF fork| AOFCompact[AOF Rewrite Worker]
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>        AOFCompact --&gt;|Truncate history| AOFFile
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>    end
+</span></code></pre></div>
+<h3 id="rdb-redis-database-snapshots">RDB (Redis Database) Snapshots</h3>
+<p>RDB persistence performs point-in-time snapshots of the dataset at specified intervals (e.g., "if 10,000 keys changed in 60 seconds").</p>
+<h4 id="the-forking-process">The Forking Process</h4>
+<ol>
+<li>The server calls the system level <code>fork()</code> function.</li>
+<li>A child process is spawned, which inherits an exact clone of the parent's memory layout.</li>
+<li>The child writes the dataset to a temporary RDB file.</li>
+<li>Once written, the temporary file replaces the old <code>dump.rdb</code> file atomically.</li>
+</ol>
+<h4 id="copy-on-write-cow">Copy-On-Write (COW)</h4>
+<p>When <code>fork()</code> is executed, the OS does not copy the physical memory pages. Instead, it points the child process’s page tables to the parent’s physical RAM addresses, marking them as read-only.
+* If a client sends a write request, the main Redis thread catches the write violation.
+* The OS copies that specific page (typically 4 KB) to a new memory address, updates the parent’s page table, and then performs the write operation.
+* The child process’s page tables still point to the original, unmodified page, allowing it to write a consistent snapshot of the database at the moment of the fork.</p>
+<blockquote>
+<p>[!WARNING]
+<strong>Disable Transparent Huge Pages (THP):</strong>
+Modern Linux kernels use THP to automatically allocate 2 MB memory pages instead of 4 KB pages. During a Redis <code>fork()</code>, if THP is active, any small write command will force the OS to copy a full 2 MB page rather than 4 KB. This dramatically increases memory usage during snapshots and can lead to out-of-memory (OOM) crashes.</p>
+</blockquote>
+<h4 id="advantages-disadvantages-of-rdb">Advantages &amp; Disadvantages of RDB</h4>
+<ul>
+<li><strong>Advantages</strong>:</li>
+<li><strong>Compact Storage</strong>: RDB is a highly compressed single file, making it ideal for backups and disaster recovery.</li>
+<li><strong>Fast Boot Times</strong>: Restoring a database from an RDB file is much faster than replaying AOF logs command-by-command.</li>
+<li><strong>Disadvantages</strong>:</li>
+<li><strong>Data Loss Vulnerability</strong>: If the server crashes between snapshots, all writes since the last snapshot are lost.</li>
+<li><strong>CPU Overhead</strong>: Spawning a child process via <code>fork()</code> is CPU-heavy on large datasets and can freeze client processing for several milliseconds if the dataset is tens of gigabytes in size.</li>
+</ul>
+<hr />
+<h3 id="aof-append-only-file">AOF (Append-Only File)</h3>
+<p>AOF logs every write command received by Redis to an append-only file on disk.</p>
+<h4 id="aof-sync-policies">AOF Sync Policies</h4>
+<p>Commands are written to an internal AOF buffer before being flushed to disk. The frequency of flushing is managed by the <code>appendfsync</code> parameter:
+1. <strong><code>appendfsync always</code></strong>: The buffer is flushed to disk after <em>every</em> write command. This is highly secure but limits throughput to the disk's physical write speeds.
+2. <strong><code>appendfsync everysec</code></strong> (Default): The buffer is flushed once per second by a background thread. This balances performance with durability, risking at most 1 second of data loss.
+3. <strong><code>appendfsync no</code></strong>: The OS decides when to flush the buffer (usually every 30 seconds). This is the fastest setting but provides the lowest durability.</p>
+<h4 id="aof-rewrite">AOF Rewrite</h4>
+<p>Over time, the AOF file grows as commands accumulate. For example, if a counter is incremented 1 million times, the AOF file will contain 1 million <code>INCR</code> lines.</p>
+<p>To keep the file size manageable, Redis implements <strong>AOF Rewriting</strong> (<code>BGREWRITEAOF</code>):
+1. A child process is spawned via <code>fork()</code>.
+2. The child reads the current in-memory dataset and writes the minimum command sequence required to reconstruct it (e.g., writing a single <code>SET counter 1000000</code> instead of 1 million increments).
+3. The parent continues appending incoming client commands to the active AOF file on disk and also buffers them in an internal "AOF Rewrite Buffer".
+4. When the child finishes writing, the parent appends the buffered commands to the new file and replaces the old AOF file atomically.</p>
+<hr />
+<h3 id="hybrid-persistence">Hybrid Persistence</h3>
+<p>Introduced in Redis 4.0, Hybrid Persistence combines the strengths of RDB and AOF. When enabled via <code>aof-use-rdb-preamble yes</code>, the AOF rewrite process writes an RDB snapshot to the beginning of the file, then appends incremental write logs to the end. On startup, Redis loads the RDB preamble quickly, then replays the short list of AOF commands.</p>
+<hr />
+<h2 id="6-redis-replication">6. Redis Replication</h2>
+<p>Replication allows data from one master server to be copied to multiple replica servers. This provides high availability and read scalability.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>sequenceDiagram
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    participant Replica as Redis Replica
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    participant Master as Redis Master
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    Replica-&gt;&gt;Master: 1. Establish TCP Connection
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    Replica-&gt;&gt;Master: 2. PING (Checks Link Status)
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    Replica-&gt;&gt;Master: 3. AUTH &lt;password&gt; (If configured)
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    Replica-&gt;&gt;Master: 4. PSYNC &lt;replication_id&gt; &lt;offset&gt;
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    alt Full Synchronization (First join or sync mismatch)
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>        Note over Master: Spawns BGSAVE to write dump.rdb
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>        Master-&gt;&gt;Replica: 5a. +FULLRESYNC &lt;master_repl_id&gt; &lt;offset&gt;
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>        Master-&gt;&gt;Replica: 5b. Stream RDB File
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>        Note over Replica: Discards old dataset &amp; loads RDB
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>        Master-&gt;&gt;Replica: 5c. Stream replication buffer writes
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>        Note over Replica: Applies buffered writes
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    else Partial Synchronization (Re-connection &amp; offset in backlog)
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>        Master-&gt;&gt;Replica: 6. +CONTINUE (Acknowledge partial sync)
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>        Master-&gt;&gt;Replica: 7. Stream missing commands from backlog
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>    end
+</span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>
+</span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>    loop Command Propagation
+</span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>        Master-&gt;&gt;Replica: 8. Send asynchronous write commands
+</span><span id="__span-10-24"><a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>        Replica-&gt;&gt;Master: 9. REPLCONF ACK &lt;offset&gt; (heartbeat)
+</span><span id="__span-10-25"><a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a>    end
+</span></code></pre></div>
+<h3 id="replication-workflow">Replication Workflow</h3>
+<ol>
+<li><strong>Connection</strong>: The replica establishes a connection to the master.</li>
+<li><strong>Handshake</strong>: The replica sends a <code>PING</code> command to verify connection quality and authenticates if required.</li>
+<li><strong>Synchronization Request</strong>: The replica sends the <code>PSYNC</code> command along with the master’s run ID (<code>replication_id</code>) and the last processed replication offset.</li>
+</ol>
+<h4 id="full-synchronization">Full Synchronization</h4>
+<p>If the replica is connecting for the first time, or if its replication offset is no longer present in the master's buffer, a full sync is triggered:
+* The master executes a background <code>BGSAVE</code> to generate an RDB file.
+* While the snapshot is being generated, the master buffers all new write commands in its replication buffer.
+* Once the RDB file is generated, the master streams it over the network to the replica.
+* The replica discards its old dataset, loads the new RDB file, and then applies the buffered writes sent by the master.</p>
+<h4 id="partial-synchronization">Partial Synchronization</h4>
+<p>If a replica disconnects briefly, it sends its last replication offset during reconnection:
+* The master maintains a circular <strong>Replication Backlog Buffer</strong> in memory.
+* If the replica's offset is still within this backlog, the master sends only the missing data.
+* This avoids the need to write and transfer a full RDB file.</p>
+<h3 id="read-scaling">Read Scaling</h3>
+<p>By configuration, replicas are read-only (<code>replica-read-only yes</code>).
+* <strong>Scaling</strong>: Applications can route write traffic to the master and distribute read queries across multiple replicas.
+* <strong>Consistency Considerations</strong>: Redis replication is <strong>asynchronous</strong>. Replicas acknowledge received commands after they have been processed, which means read queries directed to replicas can return slightly stale data.</p>
+<hr />
+<h2 id="7-redis-sentinel">7. Redis Sentinel</h2>
+<p>While replication provides data redundancy, it does not provide automatic failover. If the master server crashes, a replica must be manually promoted to master. <strong>Redis Sentinel</strong> solves this problem by automating monitoring, notifications, and failover.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>flowchart TD
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    subgraph Sentinel Pool
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>        S1[Sentinel 1] &lt;---&gt; S2[Sentinel 2]
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        S2 &lt;---&gt; S3[Sentinel 3]
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        S3 &lt;---&gt; S1
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    end
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    subgraph Redis Cluster
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>        M[Redis Master]
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>        R1[Redis Replica 1]
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>        R2[Redis Replica 2]
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    end
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    S1 &amp; S2 &amp; S3 --&gt;|PING Monitoring| M
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>    S1 &amp; S2 &amp; S3 --&gt;|PING Monitoring| R1
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>    S1 &amp; S2 &amp; S3 --&gt;|PING Monitoring| R2
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>    M -.-&gt;|Replication| R1 &amp; R2
+</span></code></pre></div>
+<h3 id="why-sentinel-exists">Why Sentinel Exists</h3>
+<p>Sentinel is a distributed system designed to manage a Redis deployment through three core tasks:
+1. <strong>Monitoring</strong>: Periodically checking if the master and replicas are working as expected.
+2. <strong>Notification</strong>: Informing system administrators or clients via an API when a monitored instance fails.
+3. <strong>Automatic Failover</strong>: Promoting a replica to master if the master goes down, and updating the other replicas to follow the new master.</p>
+<h3 id="failover-process">Failover Process</h3>
+<h4 id="subjectively-down-sdown">Subjectively Down (SDOWN)</h4>
+<p>A Sentinel marks a master as SDOWN if it does not receive a valid response to a <code>PING</code> command within the configured <code>down-after-milliseconds</code> window. This is a local decision made by a single Sentinel.</p>
+<h4 id="objectively-down-odown">Objectively Down (ODOWN)</h4>
+<p>Once a Sentinel marks a master as SDOWN, it queries the other Sentinels in the network.
+* If the number of Sentinels reporting the master as down reaches the configured <strong>Quorum</strong> threshold, the master's status is upgraded to ODOWN.
+* Quorum is configured on startup (e.g., if there are 3 Sentinels, quorum is typically set to 2).</p>
+<h3 id="election-mechanism">Election Mechanism</h3>
+<p>Once a master is marked as ODOWN, the Sentinels initiate a vote to elect a leader Sentinel to manage the failover:
+1. The election uses a consensus protocol similar to Raft.
+2. The Sentinel that first detects ODOWN requests votes from the others.
+3. A Sentinel votes for the first candidate that requests it.
+4. A candidate must receive votes from a majority of all active Sentinels to become the leader.</p>
+<p>Once elected, the leader Sentinel promotes a replica to master based on the following criteria:
+1. Discards replicas that are offline or have unstable connections.
+2. Prefers the replica with the lowest <code>replica-priority</code> (configured value).
+3. Prefers the replica with the highest replication offset (the most up-to-date data).
+4. Prefers the replica with the lowest run ID.</p>
+<p>The leader Sentinel sends <code>SLAVEOF NO ONE</code> to the chosen replica to promote it, configures the remaining replicas to replicate from the new master, and publishes the new configuration to clients using Sentinel's Pub/Sub channels.</p>
+<hr />
+<h2 id="8-redis-cluster-architecture">8. Redis Cluster Architecture</h2>
+<p>Redis Sentinel provides high availability but is limited to a single master. To scale write capacity and memory beyond the limits of a single physical server, you must use <strong>Redis Cluster</strong>.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>flowchart LR
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    subgraph Client
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>        C[Smart Client]
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    end
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    subgraph Node Group A
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>        MA[Master A: Slots 0-5460] &lt;---&gt; RA[Replica A]
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    end
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    subgraph Node Group B
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>        MB[Master B: Slots 5461-10922] &lt;---&gt; RB[Replica B]
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>    end
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    subgraph Node Group C
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>        MC[Master C: Slots 10923-16383] &lt;---&gt; RC[Replica C]
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>    end
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>    MA &lt;---&gt;|Gossip Protocol / Port 16379| MB
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>    MB &lt;---&gt;|Gossip Protocol| MC
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>    MC &lt;---&gt;|Gossip Protocol| MA
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>    C --&gt;|Reads/Writes| MA
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>    C --&gt;|Slot Redirection| MB
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a>    C --&gt;|Slot Redirection| MC
+</span></code></pre></div>
+<h3 id="sharding-hash-slots">Sharding &amp; Hash Slots</h3>
+<p>Redis Cluster does not use consistent hashing. Instead, it partition its keyspace into <strong>16,384 Hash Slots</strong>.
+* When a master node joins a cluster, it is assigned a subset of these slots (e.g., Node A gets slots 0–5460, Node B gets 5461–10922, and Node C gets 10923–16383).
+* To map a key to a hash slot, Redis runs the CRC16 checksum on the key and applies a modulo operation:</p>
+<p>$$\text{Slot} = \text{CRC16}(\text{key}) \pmod{16384}$$</p>
+<h4 id="hash-tags">Hash Tags</h4>
+<p>If you need to perform operations on multiple keys at once (e.g., transactions or joins), Redis Cluster requires all those keys to reside in the same hash slot. You can ensure this by using <strong>Hash Tags</strong>.
+* Any part of a key enclosed in curly braces <code>{}</code> is hashed instead of the whole key.
+* For example, <code>{user:1000}:profile</code> and <code>{user:1000}:orders</code> will both be hashed using the string <code>user:1000</code>, ensuring they land in the exact same slot.</p>
+<h3 id="cluster-topology">Cluster Topology</h3>
+<p>Redis Cluster uses a "shared-nothing" mesh topology:
+* All master nodes are connected to each other via a binary protocol bus running on a separate port (typically the client port + 10,000, such as <code>16379</code>).
+* Nodes use this bus to run a <strong>Gossip Protocol</strong> to exchange node health, slot assignments, and metadata.
+* There is no central routing proxy; clients connect directly to the master nodes.</p>
+<h3 id="request-routing">Request Routing</h3>
+<h4 id="smart-clients">Smart Clients</h4>
+<p>Modern Redis client libraries cache the mapping between hash slots and node IP addresses locally. When a client executes a query, it calculates the hash slot of the key and sends the request directly to the correct node.</p>
+<h4 id="moved-redirection">MOVED Redirection</h4>
+<p>If a client sends a request to a node that does not hold the target key's hash slot (for example, if the cluster layout changed), the node returns a <code>MOVED</code> error containing the target node's IP and port:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>-MOVED 3999 127.0.0.1:7002
+</span></code></pre></div>
+<p>The client must then resend the query to the designated IP and update its local slot cache.</p>
+<h4 id="ask-redirection">ASK Redirection</h4>
+<p>During cluster resharding (migrating slots from one node to another), a slot may be in a transient state.
+* If a query is sent for a key that has already migrated, the source node returns an <code>ASK</code> redirection:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>-ASK 3999 127.0.0.1:7003
+</span></code></pre></div>
+<ul>
+<li>The client must send an <code>ASKING</code> command to the target node first, followed immediately by the query. This tells the target node to process the query even though it has not yet fully claimed the hash slot. Unlike <code>MOVED</code>, <code>ASK</code> does not cause the client to update its local slot cache.</li>
+</ul>
+<hr />
+<h2 id="9-redis-memory-optimization">9. Redis Memory Optimization</h2>
+<p>Because memory is more expensive than disk space, managing and optimizing memory usage in Redis is critical.</p>
+<h3 id="eviction-policies">Eviction Policies</h3>
+<p>When Redis’s memory usage reaches the limit configured by <code>maxmemory</code>, it evicts keys to free up space. The eviction behavior is determined by the <code>maxmemory-policy</code> setting:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Policy</th>
+<th style="text-align: left;">Target</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>noeviction</code></td>
+<td style="text-align: left;">N/A</td>
+<td style="text-align: left;">Returns an error on write commands. Read commands are still processed.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>allkeys-lru</code></td>
+<td style="text-align: left;">All keys</td>
+<td style="text-align: left;">Evicts the least recently used keys across the entire dataset.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>volatile-lru</code></td>
+<td style="text-align: left;">Keys with TTL</td>
+<td style="text-align: left;">Evicts the least recently used keys among those with an expiration time.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>allkeys-lfu</code></td>
+<td style="text-align: left;">All keys</td>
+<td style="text-align: left;">Evicts the least frequently used keys across the entire dataset.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>volatile-lfu</code></td>
+<td style="text-align: left;">Keys with TTL</td>
+<td style="text-align: left;">Evicts the least frequently used keys among those with an expiration time.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>allkeys-random</code></td>
+<td style="text-align: left;">All keys</td>
+<td style="text-align: left;">Evicts random keys to free up space.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>volatile-random</code></td>
+<td style="text-align: left;">Keys with TTL</td>
+<td style="text-align: left;">Evicts random keys among those with an expiration time.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>volatile-ttl</code></td>
+<td style="text-align: left;">Keys with TTL</td>
+<td style="text-align: left;">Evicts keys with the shortest remaining Time-To-Live.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="lru-least-recently-used-in-redis">LRU (Least Recently Used) in Redis</h3>
+<p>A traditional LRU algorithm requires maintaining a doubly-linked list of all keys. When a key is accessed, it is moved to the head of the list. This introduces substantial memory overhead (two pointers per key) and locks the keyspace, which degrades performance.</p>
+<p>To avoid this, Redis uses an <strong>approximated LRU algorithm</strong>:
+1. Every Redis object has a 24-bit header field (<code>lru</code>) that stores the timestamp of its last access.
+2. When eviction is triggered, Redis does not scan the entire dataset. Instead, it randomly samples a small set of keys (default: 5, configured by <code>maxmemory-samples</code>).
+3. It evicts the key with the oldest timestamp from that sample.
+4. This approach uses no extra memory pointers and performs similarly to true LRU.</p>
+<hr />
+<h3 id="lfu-least-frequently-used-in-redis">LFU (Least Frequently Used) in Redis</h3>
+<p>LFU tracks how often a key is accessed. It uses the same 24-bit <code>lru</code> header field, but splits it into two parts:
+1. <strong>Logarithmic Counter (8 bits)</strong>: An access counter that increments logarithmically, capping at 255.
+2. <strong>Decay Time (16 bits)</strong>: The timestamp of the last decay, stored in minutes.</p>
+<h4 id="the-logarithmic-increment">The Logarithmic Increment</h4>
+<p>When a key is accessed, the counter is not simply incremented by 1. Instead, it uses a probability function:</p>
+<p>$$P = \frac{1}{\text{counter} \cdot \text{lfu-log-factor} + 1}$$</p>
+<p>A higher <code>lfu-log-factor</code> makes the counter grow slower, allowing you to tune the system for different traffic patterns.</p>
+<h4 id="the-decay-process">The Decay Process</h4>
+<p>If a key is popular for a short time and then becomes inactive, its counter must decay to prevent it from occupying memory indefinitely.
+* When a key is accessed, Redis checks how many minutes have passed since the decay timestamp.
+* The counter is decremented by a value configured by <code>lfu-decay-time</code> (default: 1 minute).</p>
+<hr />
+<h3 id="ttl-time-to-live-and-expiration">TTL (Time-To-Live) and Expiration</h3>
+<p>Redis supports two mechanisms for removing expired keys from memory:</p>
+<h4 id="1-passive-expiration">1. Passive Expiration</h4>
+<p>When a client requests a key, Redis checks if it has an expiration time set. If the current time is past the expiration time, the key is deleted on the spot and Redis returns <code>nil</code>.</p>
+<h4 id="2-active-expiration">2. Active Expiration</h4>
+<p>If expired keys are never requested, passive expiration alone will not reclaim their memory. To address this, Redis runs an active scan in <code>serverCron</code> 10 times per second:
+1. It randomly tests 20 keys with an expiration time set.
+2. It deletes all expired keys found in the sample.
+3. If more than 25% of the sampled keys are expired, it repeats the process from step 1.
+4. To prevent blocking the main thread, the scan has a strict time limit (usually 25 milliseconds).</p>
+<hr />
+<h3 id="practical-memory-optimization-strategies">Practical Memory Optimization Strategies</h3>
+<ul>
+<li><strong>Use Hashes for Small Objects</strong>: Storing data in a Redis hash (e.g., <code>user:1000</code> with fields <code>name</code> and <code>email</code>) is more memory-efficient than storing it in flat keys (e.g., <code>user:1000:name</code> and <code>user:1000:email</code>). When a hash contains fewer than <code>hash-max-listpack-entries</code>, Redis encodes it as a dense, pointer-free <code>listpack</code>.</li>
+<li><strong>Configure Allocator Release</strong>: Set <code>activedefrag yes</code> to allow Redis to defragment memory dynamically and return unused pages to the operating system.</li>
+</ul>
+<hr />
+<h2 id="10-redis-in-production">10. Redis in Production</h2>
+<h3 id="real-world-architectures">Real-World Architectures</h3>
+<h4 id="netflix-evcache-distributed-personalization">Netflix: EVCache &amp; Distributed Personalization</h4>
+<p>Netflix uses Redis to power its recommendation engine and session state management.
+* <strong>Architecture</strong>: Netflix wraps Redis and Memcached inside a custom service layer called <strong>EVCache</strong>.
+* <strong>Use Case</strong>: When a user logs in, Netflix fetches their viewing history, personalized homepage metadata, and in-progress playback states from Redis. Because this data changes frequently and must load in sub-milliseconds, it is stored in clustered Redis caches distributed across multiple AWS Availability Zones.</p>
+<h4 id="uber-geospatial-matching">Uber: Geospatial Matching</h4>
+<p>Uber uses Redis to match riders with nearby drivers in real time.
+* <strong>Architecture</strong>: Driver coordinates are sent to Uber's servers every 4 seconds. These updates are stored in Redis using Geospatial indexes (<code>GEOADD</code>).
+* <strong>Use Case</strong>: When a rider opens the app, the system queries Redis using <code>GEOSEARCH</code> to find the 10 closest drivers within a 2-mile radius. Because Redis runs in memory, it can handle the high write volume of driver coordinate updates alongside the heavy read volume of client searches.</p>
+<h4 id="discord-presence-status-gateways">Discord: Presence Status &amp; Gateways</h4>
+<p>Discord uses Redis to coordinate websocket connections and display user presence states (e.g., "Online," "Idle," or "Playing a Game").
+* <strong>Architecture</strong>: Discord uses a distributed Redis cluster to route events to its gateway servers.
+* <strong>Use Case</strong>: When a user's status changes, the update is written to Redis and published to the user's servers. This ensures that presence changes are broadcast to millions of connected users with minimal latency.</p>
+<h4 id="shopify-flash-sales-job-queues">Shopify: Flash Sales &amp; Job Queues</h4>
+<p>Shopify uses Redis to protect its databases from traffic spikes during high-volume flash sales.
+* <strong>Architecture</strong>: Shopify uses Redis to implement a distributed lock manager (via the Redlock pattern) and as the backing store for <strong>Sidekiq</strong> (its Ruby job queue).
+* <strong>Use Case</strong>: When an item has limited stock, Redis locks the inventory key to ensure that checkout requests are processed sequentially. This prevents race conditions where an item is oversold.</p>
+<hr />
+<h3 id="core-use-case-architectures">Core Use Case Architectures</h3>
+<h4 id="1-session-storage">1. Session Storage</h4>
+<p>Redis is commonly used to store session data in distributed web applications.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>flowchart LR
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    LB[Load Balancer] --&gt; Web1[Web Server 1]
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    LB --&gt; Web2[Web Server 2]
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    Web1 --&gt;|Read/Write Session| Redis[(Redis Cluster)]
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    Web2 --&gt;|Read/Write Session| Redis
+</span></code></pre></div>
+<ul>
+<li><strong>Implementation</strong>: The web server generates a unique session token, writes the user's state to a Redis Hash (using the token as the key), and sets a TTL (e.g., 30 minutes).</li>
+<li><strong>Benefit</strong>: If a web server goes down, the load balancer redirects the user to a different server. Because the session is stored in Redis rather than on the local server, the user remains logged in.</li>
+</ul>
+<h4 id="2-sliding-window-rate-limiter">2. Sliding Window Rate Limiter</h4>
+<p>A sliding window rate limiter restricts the number of API calls a client can make in a given timeframe (e.g., 60 requests per minute).</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>flowchart TD
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    Start[API Call Received] --&gt; GetTS[Get Current Timestamp]
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    GetTS --&gt; RemoveOld[ZREMRANGEBYSCORE: Remove elements older than window]
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    RemoveOld --&gt; Count[ZCARD: Count remaining requests]
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    Count --&gt; Check{Count &lt; Limit?}
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    Check --&gt;|Yes| Allow[ZADD: Add current request] --&gt; Success[Proceed with API Call]
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    Check --&gt;|No| Block[Return 429 Too Many Requests]
+</span></code></pre></div>
+<h5 id="lua-script-implementation">Lua Script Implementation</h5>
+<p>To prevent race conditions, the rate limiter can be run as an atomic Lua script:</p>
+<div class="language-lua highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kd">local</span><span class="w"> </span><span class="nv">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">KEYS</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="kd">local</span><span class="w"> </span><span class="nv">now</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">tonumber</span><span class="p">(</span><span class="nv">ARGV</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="kd">local</span><span class="w"> </span><span class="nv">window</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">tonumber</span><span class="p">(</span><span class="nv">ARGV</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="kd">local</span><span class="w"> </span><span class="nv">limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">tonumber</span><span class="p">(</span><span class="nv">ARGV</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="kd">local</span><span class="w"> </span><span class="nv">clearBefore</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">now</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">window</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">&#39;ZREMRANGEBYSCORE&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">key</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">clearBefore</span><span class="p">)</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="kd">local</span><span class="w"> </span><span class="nv">currentRequests</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">&#39;ZCARD&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">key</span><span class="p">)</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="kr">if</span><span class="w"> </span><span class="nv">currentRequests</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nv">limit</span><span class="w"> </span><span class="kr">then</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">    </span><span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">&#39;ZADD&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">key</span><span class="p">,</span><span class="w"> </span><span class="nv">now</span><span class="p">,</span><span class="w"> </span><span class="nv">now</span><span class="p">)</span>
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">    </span><span class="nv">redis</span><span class="p">.</span><span class="nf">call</span><span class="p">(</span><span class="s1">&#39;EXPIRE&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">key</span><span class="p">,</span><span class="w"> </span><span class="nv">window</span><span class="p">)</span>
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="mi">1</span>
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="kr">else</span>
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="mi">0</span>
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="kr">end</span>
+</span></code></pre></div>
+<h4 id="3-real-time-leaderboards">3. Real-Time Leaderboards</h4>
+<p>Sorted Sets (<code>ZSet</code>) make implementing real-time leaderboards straightforward.
+* <strong>Add Score</strong>: <code>ZADD leaderboard 5000 "player_1"</code> (updates "player_1"'s score to 5000).
+* <strong>Retrieve Top 10 Players</strong>: <code>ZREVRANGE leaderboard 0 9 WITHSCORES</code>.
+* <strong>Get Player Rank</strong>: <code>ZREVRANK leaderboard "player_1"</code>.</p>
+<hr />
+<h2 id="11-common-redis-interview-questions">11. Common Redis Interview Questions</h2>
+<h3 id="beginner">Beginner</h3>
+<h4 id="q1-what-are-the-main-differences-between-redis-and-memcached">Q1: What are the main differences between Redis and Memcached?</h4>
+<ul>
+<li><strong>Data Types</strong>: Memcached only supports simple strings. Redis supports Strings, Lists, Hashes, Sets, Sorted Sets, Bitmaps, HyperLogLogs, and Streams.</li>
+<li><strong>Persistence</strong>: Memcached is strictly in-memory and loses data on restart. Redis supports RDB snapshots and AOF logs for durability.</li>
+<li><strong>Architecture</strong>: Memcached is multi-threaded, meaning it scales horizontally by adding cores but requires locks. Redis's core command execution is single-threaded, scaling out via sharding.</li>
+</ul>
+<h4 id="q2-why-is-the-keys-command-dangerous-in-production-and-what-should-you-use-instead">Q2: Why is the <code>KEYS *</code> command dangerous in production, and what should you use instead?</h4>
+<ul>
+<li><strong>A</strong>: <code>KEYS *</code> is an $O(N)$ blocking command that scans the entire keyspace. In a production database with millions of keys, running this command will block the single-threaded execution thread, stalling all other application requests.</li>
+<li><strong>Alternative</strong>: Use <strong><code>SCAN</code></strong> instead. <code>SCAN</code> is a cursor-based iterator that returns a small batch of keys per call (default: 10), allowing you to scan the keyspace without blocking the server.</li>
+</ul>
+<hr />
+<h3 id="intermediate">Intermediate</h3>
+<h4 id="q3-what-is-the-difference-between-del-and-unlink">Q3: What is the difference between <code>DEL</code> and <code>UNLINK</code>?</h4>
+<ul>
+<li><strong>A</strong>: Both commands remove keys from the keyspace.</li>
+<li><strong><code>DEL</code></strong>: Synchronously deletes the key and deallocates its memory. If the key points to a large set or list containing millions of elements, <code>DEL</code> will block the main execution thread until all memory is freed.</li>
+<li><strong><code>UNLINK</code></strong>: Removes the key from the keyspace index immediately (making it look deleted to clients), but delegates the actual memory deallocation to a background helper thread.</li>
+</ul>
+<h4 id="q4-does-redis-support-acid-transactions">Q4: Does Redis support ACID transactions?</h4>
+<ul>
+<li><strong>A</strong>: Redis supports transactions via the <code>MULTI</code>, <code>EXEC</code>, <code>DISCARD</code>, and <code>WATCH</code> commands. However, these transactions differ from traditional relational database ACID transactions:</li>
+<li><strong>Atomicity</strong>: Commands in a transaction are executed sequentially as a block. If a syntax error is detected during queuing, the transaction fails. However, if a runtime error occurs (e.g., calling <code>INCR</code> on a key containing a list), the other commands in the transaction are still executed; Redis does not support automatic rollback.</li>
+<li><strong>Isolation</strong>: Redis is single-threaded, which guarantees complete isolation; no other client commands can execute in the middle of a transaction.</li>
+</ul>
+<hr />
+<h3 id="advanced">Advanced</h3>
+<h4 id="q5-how-does-the-redlock-algorithm-work-and-what-are-its-main-criticisms">Q5: How does the Redlock algorithm work, and what are its main criticisms?</h4>
+<ul>
+<li><strong>A</strong>: <strong>Redlock</strong> is a distributed lock algorithm designed by Salvatore Sanfilippo. To acquire a lock, a client:</li>
+<li>Gets the current timestamp.</li>
+<li>Attempts to acquire the lock in all $N$ independent Redis masters (using the same key and a unique random value) with a short timeout.</li>
+<li>If the client acquires the lock in a majority of nodes ($N/2 + 1$) and the elapsed time is less than the lock validity time, the lock is acquired.</li>
+<li>To release the lock, the client deletes the key from all nodes.</li>
+<li><strong>Criticisms (by Martin Kleppmann)</strong>: Redlock relies on physical system clocks to determine lease expiration. If a system clock drifts, a node's lock key can expire prematurely. Furthermore, if a node restarts and loses its lock state, or if a client experiences a long garbage collection (GC) pause after acquiring the lock, another client can acquire the same lock, violating mutual exclusion.</li>
+</ul>
+<h4 id="q6-explain-what-happens-when-the-replication-backlog-buffer-overflows-during-a-replica-disconnect">Q6: Explain what happens when the replication backlog buffer overflows during a replica disconnect.</h4>
+<ul>
+<li><strong>A</strong>: The replication backlog buffer is a circular buffer of fixed size. If a replica disconnects and does not reconnect before the master writes enough data to overwrite the replica's last known offset, a <strong>Partial Synchronization (PSYNC)</strong> is no longer possible. Upon reconnecting, the master is forced to trigger a <strong>Full Synchronization</strong>, which requires generating and transferring a new RDB file.</li>
+</ul>
+<hr />
+<h3 id="faang-level">FAANG-Level</h3>
+<h4 id="q7-design-a-distributed-rate-limiter-that-can-handle-100000-requests-per-second-with-slide-window-precision-how-do-you-scale-this-architecture">Q7: Design a distributed rate limiter that can handle 100,000 requests per second with slide-window precision. How do you scale this architecture?</h4>
+<ul>
+<li><strong>A</strong>: To handle this load, you can deploy a Redis Cluster sharded by client IP or API key.</li>
+<li><strong>Data Structure</strong>: Use a Sorted Set (<code>ZSet</code>) where each client has a key, scores are millisecond timestamps, and values are unique identifiers (e.g., UUIDs).</li>
+<li><strong>Execution</strong>: Run an atomic Lua script (to avoid race conditions and network round-trips) that removes timestamps older than the window, checks cardinality using <code>ZCARD</code>, and inserts the new request if the limit is not exceeded.</li>
+<li><strong>Scaling</strong>: Ensure the cluster handles hotspotting by using hash tags to distribute keys evenly across slots. For read-heavy validation, you can deploy replicas to offload status checks, while keeping writes on the masters.</li>
+</ul>
+<hr />
+<h2 id="12-redis-trade-offs">12. Redis Trade-offs</h2>
+<h3 id="advantages">Advantages</h3>
+<ul>
+<li><strong>Sub-Millisecond Performance</strong>: Keeps all data in RAM, avoiding disk seek overhead.</li>
+<li><strong>Rich Data Structures</strong>: Provides built-in operations for lists, sets, and sorted sets directly on the server.</li>
+<li><strong>Atomic Operations</strong>: Prevents race conditions by processing commands sequentially on a single execution thread.</li>
+<li><strong>Tunable Persistence</strong>: Allows balancing speed and data durability based on the application's needs.</li>
+</ul>
+<h3 id="disadvantages">Disadvantages</h3>
+<ul>
+<li><strong>Memory Costs</strong>: RAM is significantly more expensive per gigabyte than SSD or HDD storage.</li>
+<li><strong>Single-Core Limitation</strong>: Cannot scale processing power beyond a single CPU core for individual command execution.</li>
+<li><strong>Data Loss Risk</strong>: Under default persistence configurations (<code>appendfsync everysec</code>), you can lose up to one second of data during a crash.</li>
+<li><strong>Data Size Limits</strong>: The dataset must fit into the host machine's physical RAM, making it less suitable for storing petabytes of cold data.</li>
+</ul>
+<h3 id="when-not-to-use-redis">When NOT to Use Redis</h3>
+<ul>
+<li><strong>Heavy Relational Queries</strong>: If your application requires complex joins, foreign keys, or multi-row transactions across different tables, use an RDBMS like PostgreSQL.</li>
+<li><strong>Large Cold Datasets</strong>: If you need to store terabytes of historical logs or archival data that is rarely accessed, storing it in RAM is not cost-effective; use an object store like AWS S3 or a data warehouse like BigQuery instead.</li>
+</ul>
+<hr />
+<h2 id="13-redis-vs-competitors">13. Redis vs. Competitors</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Metric / Feature</th>
+<th style="text-align: left;">Redis</th>
+<th style="text-align: left;">Memcached</th>
+<th style="text-align: left;">MongoDB</th>
+<th style="text-align: left;">PostgreSQL</th>
+<th style="text-align: left;">DynamoDB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Primary Storage</strong></td>
+<td style="text-align: left;">RAM</td>
+<td style="text-align: left;">RAM</td>
+<td style="text-align: left;">Disk (with RAM caching)</td>
+<td style="text-align: left;">Disk (with RAM buffering)</td>
+<td style="text-align: left;">Disk (SSD with cache)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Data Model</strong></td>
+<td style="text-align: left;">Key-Value / Multi-Structure</td>
+<td style="text-align: left;">Key-Value (Strings only)</td>
+<td style="text-align: left;">Document (JSON/BSON)</td>
+<td style="text-align: left;">Relational / SQL</td>
+<td style="text-align: left;">Key-Value / Document</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Write Latency</strong></td>
+<td style="text-align: left;">Sub-millisecond</td>
+<td style="text-align: left;">Sub-millisecond</td>
+<td style="text-align: left;">Millisecond</td>
+<td style="text-align: left;">Millisecond</td>
+<td style="text-align: left;">Single-digit millisecond</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Persistence</strong></td>
+<td style="text-align: left;">Yes (RDB/AOF)</td>
+<td style="text-align: left;">No</td>
+<td style="text-align: left;">Yes (WiredTiger Journal)</td>
+<td style="text-align: left;">Yes (WAL)</td>
+<td style="text-align: left;">Yes</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Query Model</strong></td>
+<td style="text-align: left;">Command-based</td>
+<td style="text-align: left;">Get/Set</td>
+<td style="text-align: left;">JSON Queries / Aggregations</td>
+<td style="text-align: left;">SQL</td>
+<td style="text-align: left;">Partition Key / GSI</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Use Case</strong></td>
+<td style="text-align: left;">Caching, Queues, Leaderboards</td>
+<td style="text-align: left;">Simple Caching</td>
+<td style="text-align: left;">Operational Datastores</td>
+<td style="text-align: left;">Transactional (ACID) Systems</td>
+<td style="text-align: left;">Fully Managed Web-Scale Apps</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="14-production-best-practices">14. Production Best Practices</h2>
+<h3 id="high-availability-configuration">High Availability Configuration</h3>
+<ul>
+<li><strong>Deploy at least 3 Sentinel Instances</strong>: Ensure there are enough Sentinels to reach a quorum for failover decisions.</li>
+<li><strong>Use Redis Cluster for Horizontal Scaling</strong>: Distribute data across multiple master nodes when your dataset size exceeds the memory capacity of a single server.</li>
+</ul>
+<h3 id="key-metrics-to-monitor">Key Metrics to Monitor</h3>
+<ul>
+<li><strong><code>used_memory</code></strong>: Ensure usage remains safely below the physical RAM limit to prevent swapping.</li>
+<li><strong><code>mem_fragmentation_ratio</code></strong>: Keep an eye on fragmentation. A ratio above 1.5 indicates you may need to trigger active defragmentation.</li>
+<li><strong><code>connected_clients</code></strong>: Monitor connection limits to ensure application servers do not exhaust the file descriptor limit.</li>
+<li><strong><code>evicted_keys</code> / <code>expired_keys</code></strong>: A high rate of evictions indicates that <code>maxmemory</code> is too low, forcing active keys out of the cache.</li>
+</ul>
+<h3 id="security">Security</h3>
+<ul>
+<li><strong>Disable/Rename Dangerous Commands</strong>: Prevent accidental data loss by renaming destructive commands in your <code>redis.conf</code> file:
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>rename-command FLUSHALL &quot;&quot;
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>rename-command FLUSHDB &quot;&quot;
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>rename-command CONFIG &quot;&quot;
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>rename-command KEYS &quot;&quot;
+</span></code></pre></div></li>
+<li><strong>Enable TLS</strong>: Encrypt data in transit by enabling TLS in your configuration file.</li>
+<li><strong>Bind to Private Interfaces</strong>: Never bind Redis to public IP addresses. Limit access to localhost or your internal VPC:
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>bind 127.0.0.1 10.0.0.5
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>protected-mode yes
+</span></code></pre></div></li>
+</ul>
+<h3 id="backup-and-disaster-recovery">Backup and Disaster Recovery</h3>
+<ul>
+<li><strong>Schedule Daily RDB Backups</strong>: Copy RDB snapshots to an offsite location, such as AWS S3 or Google Cloud Storage, daily.</li>
+<li><strong>Test Restores Regularly</strong>: Regularly verify your backups by spinning up a new Redis instance and loading an RDB snapshot to ensure the file is not corrupted.</li>
+</ul>
+<hr />
+<h2 id="15-summary">15. Summary</h2>
+<h3 id="key-takeaways">Key Takeaways</h3>
+<ol>
+<li><strong>Speed</strong>: Redis achieves sub-millisecond speeds by running entirely in memory and using I/O multiplexing.</li>
+<li><strong>Single-Threaded Execution</strong>: Running command execution on a single thread simplifies design and avoids locks, while modern versions offload background tasks to helper threads.</li>
+<li><strong>Data Versatility</strong>: Rather than just storing strings, Redis allows you to manipulate lists, sets, and sorted sets directly on the server.</li>
+<li><strong>Clustering</strong>: Redis Cluster uses 16,384 hash slots to partition data across multiple machines, scaling both memory and write capacity.</li>
+</ol>
+<h3 id="architecture-cheat-sheet">Architecture Cheat Sheet</h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>+-------------------------------------------------------------------------+
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>|                           CLIENT / RESP PROTOCOL                        |
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>+-------------------------------------------------------------------------+
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>                                     |
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>                                     v (I/O Multiplexer: epoll/kqueue)
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>+-------------------------------------------------------------------------+
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>|                           aeEventLoop (Reactor)                         |
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>+-------------------------------------------------------------------------+
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>                                     |
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>           +-------------------------+-------------------------+
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>           | (File Events)                                     | (Time Events)
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>           v                                                   v
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>+------------------------------------+               +--------------------+
+</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>|  Single-Threaded Executor          |               | serverCron Handler |
+</span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>|  - Command Table Lookup            |               | - Eviction / TTL   |
+</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>|  - DB Access / Memory Ops          |               | - Active Defrag    |
+</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>+------------------------------------+               +--------------------+
+</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>           |                                                   |
+</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>           +-------------------------+-------------------------+
+</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>                                     |
+</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>                                     v
+</span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>+-------------------------------------------------------------------------+
+</span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a>|                  In-Memory Keyspace / jemalloc Allocator                |
+</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>|  [Strings: SDS] [Lists: Quicklist] [Hashes: Dict] [ZSets: SkipList]     |
+</span><span id="__span-20-25"><a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a>+-------------------------------------------------------------------------+
+</span></code></pre></div>
+<h3 id="quick-revision-notes">Quick Revision Notes</h3>
+<ul>
+<li><strong>Default Port</strong>: 6379 (spells "MERZ" on a telephone keypad).</li>
+<li><strong>Hash Slots</strong>: 16,384. Formula: <code>CRC16(key) % 16384</code>.</li>
+<li><strong>HyperLogLog Size</strong>: Fixed at 12 KB, with a standard error of 0.81%.</li>
+<li><strong>Replication</strong>: Asynchronous, master-replica pattern, uses a circular backlog buffer for partial resync.</li>
+<li><strong>Eviction Policies</strong>: LRU and LFU are approximated using sampling to save memory and avoid lock contention.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
